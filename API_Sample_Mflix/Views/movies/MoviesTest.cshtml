@@ -1,0 +1,36 @@
+﻿@model List<API_Sample_Mflix.Models.Movies>
+
+@{
+    ViewBag.Title = "MoviesTest";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>MoviesTest</h2>
+<div class="row" style="margin-top: 30px">
+    <div class="col-sm-12">
+
+        <div class="table-responsive dataTables_wrapper no-footer">
+            <table id="table_id" class="table dataTable no-footer" style="border-radius:5px;">
+                <thead style="color: white;">
+                    <tr style="text-align-last: center;">
+
+                        <th>Title</th>
+                        <th>Year</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.title</td>
+
+                            <td>@item.year</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
