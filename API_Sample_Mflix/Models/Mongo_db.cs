@@ -15,24 +15,17 @@ namespace API_Sample_Mflix.Models
         {
             var connectionString = ConfigurationManager.AppSettings["MongoDBConnectionString"];
             var databaseName = ConfigurationManager.AppSettings["MongoDBDatabaseName"];
-
             var settings = MongoClientSettings.FromConnectionString(connectionString);
             settings.ServerApi = new ServerApi(ServerApiVersion.V1);
             MongoClient = new MongoClient(settings);
-
             mongoDatabase = ClientDB(MongoClient, databaseName);
-            //No hace nada.jpg
-            //Propósito: El que tú quieras
-
-            //Mentira, puedes crear una instancia vacía para usar los métodos dinámicamente (o sea, tú puedas llenar los atributos o los métodos para hacer lo que quieras)
-            //Caso contrario, usa el constructor inferior para crear la instancia con información predeterminada
         }
 
         public mongo_db(string username, string password, string database_Name, string cluster)
         {
             //Constructor para conexión predeterminada usando [usuario], [contrasena] y [nombre de base de datos]
             //Propósito: Constructor para conexión predeterminada
-            //MongoClient = ConnectionClient(username, password, cluster);
+            MongoClient = ConnectionClient(username, password, cluster);
             mongoDatabase = ClientDB(MongoClient, database_Name);
         }
 
@@ -55,6 +48,15 @@ namespace API_Sample_Mflix.Models
             Console.ResetColor();
         }
 
+        public MongoClient ConnectionClient(string username, string password, string cluster)
+        {
+            //Conexión con el cliente/servidor
+            //Propósito: Llegar al servidor
+            string connectionUri = $"mongodb+srv://{username}:{password}@{cluster}";
+            var settings = MongoClientSettings.FromConnectionString(connectionUri);
+            settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+            return new MongoClient(settings);
+        }
         //Parámetros
         public MongoClient MongoClient { get; set; }
 
@@ -212,14 +214,18 @@ namespace API_Sample_Mflix.Models
             var moviesCollection = database.GetCollection<Movies>("movies"); //database.GetCollection<CLASE>("COLECCIÓN")
 
             //Crearemos una lista de nuestra clase, para que los documentos tengan el formato deseado de la clase y facilitar su manipulación
-            List<Movies> allMovies = moviesCollection.Find(new BsonDocument()).Limit(50).ToList();
+            var filter = Builders<Movies>.Filter.Gte(x => x.num_mflix_comments, 1);
+
+            // Obtener los primeros 200 documentos que cumplen con el filtro
+            List<Movies> allMovies = moviesCollection.Find(filter).Limit(400).ToList();
+            //List<Movies> filterList = allMovies.Where(x => x.released.Year >= 1800 && x.released.Year <= 1950).ToList();t;
 
             //Retornamos nuestra lista, de esa manera al usar este método podrán recuperar la lista completa de registros cuando los necesitemos
             return allMovies;
             //Se repetirá este procedimiento/método para todas las tablas que desees convertir a listas a partir de sus respectivas clases, asegurate de crear su clase con sus parámetros antes
         }
 
-        public List<Product> products(IMongoDatabase database)
+        public List<Comments> Comments(IMongoDatabase database, List<Movies> movies)
         {
             //Obtener una lista de la clase Theater
             //Propósito: Habiendo llegado a la base de datos, recuperaremos todos los registros de la tabla theaters, estos se generarán en forma de lista a partir de nuestra clase Theaters
@@ -228,26 +234,71 @@ namespace API_Sample_Mflix.Models
             //En este caso queremos una colección de Theaters (es un NOMBRE de clase), entonces usaremos <NOMBRE>Collection
             //Theater = Es una clase que hemos creado para facilitar nuestras consultas, crearás una por cada colección que tengas junto a sus atributos
 
-            var productsCollection = database.GetCollection<Product>("Products"); //database.GetCollection<CLASE>("COLECCIÓN")
+            var CommentsCollection = database.GetCollection<Comments>("comments"); //database.GetCollection<CLASE>("COLECCIÓN")
 
             //Crearemos una lista de nuestra clase, para que los documentos tengan el formato deseado de la clase y facilitar su manipulación
-            List<Product> allProducts = productsCollection.Find(new BsonDocument()).ToList();
 
+            // Crear un filtro para los IDs de películas
+            var movieIds = movies.Select(movie => movie.Id);
+            var filter = Builders<Comments>.Filter.In(comment => comment.movie_id, movieIds);
+
+            // Obtener los comentarios que cumplen con el filtro
+            List<Comments> filteredComments = CommentsCollection.Find(filter).Limit(500).ToList();
             //Retornamos nuestra lista, de esa manera al usar este método podrán recuperar la lista completa de registros cuando los necesitemos
-            return allProducts;
+            return filteredComments;
             //Se repetirá este procedimiento/método para todas las tablas que desees convertir a listas a partir de sus respectivas clases, asegurate de crear su clase con sus parámetros antes
         }
-
-        public void Product_Save(Product newProduct)
+        public List<Product> products(IMongoDatabase database)
         {
-            //Propósito: Guardar un solo documento
-            //Recuerda cambiar la clase y la colección por las de tu preferencia, para poder guardar tus registros en esa colección a partir de un objeto
-            var productsCollection = this.mongoDatabase.GetCollection<Product>("Products"); //database.GetCollection<CLASE>("COLECCIÓN")
-
-            //Insertar el nuevo documento en la colección
-            productsCollection.InsertOne(newProduct);
+            var productsCollection = database.GetCollection<Product>("Products");
+            List<Product> allProducts = productsCollection.Find(new BsonDocument()).ToList();
+            return allProducts;
         }
 
+        public List<CurrentProduct> CurrentProduct(IMongoDatabase database)
+        {
+            var productsCollection = database.GetCollection<CurrentProduct>("CurrentProduct");
+            List<CurrentProduct> allProducts = productsCollection.Find(new BsonDocument()).ToList();
+            return allProducts;
+        }
+
+        public void Product_Save(CurrentProduct product)
+        {
+            //Propósito: Modificar un solo documento
+            var collection = this.mongoDatabase.GetCollection<CurrentProduct>("CurrentProduct");
+
+            var filter = Builders<CurrentProduct>.Filter.Eq("_id", new ObjectId(product.Id)); // Filtrar por el identificador (Id), para actualizar a ese documento en específico que queremos modificar
+
+            var update = Builders<CurrentProduct>.Update
+                .Set("Sensor1", product.Sensor1)
+                .Set("Sensor2", product.Sensor2)
+                .Set("Sensor3", product.Sensor3)
+                .Set("Sensor4", product.Sensor4)
+                .Set("Color.Red", product.Color.Red)
+                .Set("Color.Blue", product.Color.Blue)
+                .Set("Color.Green", product.Color.Green)
+                .Set("Active", product.Active);
+
+            collection.UpdateOne(filter, update); //Se reemplaza el viejo objeto por el nuevo con los campos modificados
+        }
+
+        
+
+        public void productDelete(string id)
+        {
+            // Propósito: Eliminar un solo documento basado en su identificador único
+            var commentColection = this.mongoDatabase.GetCollection<Product>("Products");
+
+            var filter = Builders<Product>.Filter.Eq("_id", new ObjectId(id)); // Filtrar por el identificador único (Id) del documento a eliminar
+
+            commentColection.DeleteOne(filter);
+        }
+
+        public void TimeSeries_Save(API newRecord)
+        {
+            var collection = this.mongoDatabase.GetCollection<API>("TIME_SERIES");
+            collection.InsertOne(newRecord);
+        }
 
         //A esto si le puedes mover, es más, debes hacerlo
         //
@@ -270,23 +321,21 @@ namespace API_Sample_Mflix.Models
             //Se repetirá este procedimiento/método para todas las tablas que desees convertir a listas a partir de sus respectivas clases, asegurate de crear su clase con sus parámetros antes
         }
 
-        public List<Comments> Comments(IMongoDatabase database)
+
+        public void movieUpdate(Movies updatedMovie)
         {
-            //Obtener una lista de la clase Theater
-            //Propósito: Habiendo llegado a la base de datos, recuperaremos todos los registros de la tabla theaters, estos se generarán en forma de lista a partir de nuestra clase Theaters
+            //Propósito: Modificar un solo documento
+            var moviessCollection = this.mongoDatabase.GetCollection<Movies>("movies");
 
-            //Creamos una variable "var" llamada con un texto que haga alusión a la colección que vamos a buscar, para intentar aplicar una normalización
-            //En este caso queremos una colección de Theaters (es un NOMBRE de clase), entonces usaremos <NOMBRE>Collection
-            //Theater = Es una clase que hemos creado para facilitar nuestras consultas, crearás una por cada colección que tengas junto a sus atributos
+            var filter = Builders<Movies>.Filter.Eq("_id", new ObjectId(updatedMovie.Id)); // Filtrar por el identificador (Id), para actualizar a ese documento en específico que queremos modificar
 
-            var CommentsCollection = database.GetCollection<Comments>("comments"); //database.GetCollection<CLASE>("COLECCIÓN")
+            var update = Builders<Movies>.Update
+                //.Set("CAMPO", <ATRIBUTO>); // Actualizar el campo del documento a reemplazar, a partir del atributo de tu objeto entrante que es el nuevo
+                .Set("plot", updatedMovie.plot)
+                .Set("fullplot", updatedMovie.fullplot) // Actualizar el campo City
+                .Set("languages", updatedMovie.languages);
 
-            //Crearemos una lista de nuestra clase, para que los documentos tengan el formato deseado de la clase y facilitar su manipulación
-            List<Comments> allComments = CommentsCollection.Find(new BsonDocument()).Limit(100).ToList();
-
-            //Retornamos nuestra lista, de esa manera al usar este método podrán recuperar la lista completa de registros cuando los necesitemos
-            return allComments;
-            //Se repetirá este procedimiento/método para todas las tablas que desees convertir a listas a partir de sus respectivas clases, asegurate de crear su clase con sus parámetros antes
+            moviessCollection.UpdateOne(filter, update); //Se reemplaza el viejo objeto por el nuevo con los campos modificados
         }
 
         public void Comment_Update(Comments updatedComment)
@@ -380,11 +429,8 @@ namespace API_Sample_Mflix.Models
 
         public void User_Delete(string userId)
         {
-            // Propósito: Eliminar un solo documento basado en su identificador único
             var theatersCollection = this.mongoDatabase.GetCollection<Users>("users");
-
-            var filter = Builders<Users>.Filter.Eq("_id", new ObjectId(userId)); // Filtrar por el identificador único (Id) del documento a eliminar
-
+            var filter = Builders<Users>.Filter.Eq("_id", new ObjectId(userId));
             theatersCollection.DeleteOne(filter);
         }
 
@@ -392,16 +438,12 @@ namespace API_Sample_Mflix.Models
         {
             //Propósito: Modificar un solo documento
             var usersCollection = this.mongoDatabase.GetCollection<Users>("users");
-
-            var filter = Builders<Users>.Filter.Eq("_id", new ObjectId(updatedUser.Id)); // Filtrar por el identificador (Id), para actualizar a ese documento en específico que queremos modificar
-
+            var filter = Builders<Users>.Filter.Eq("_id", new ObjectId(updatedUser.Id));
             var update = Builders<Users>.Update
-                //.Set("CAMPO", <ATRIBUTO>); // Actualizar el campo del documento a reemplazar, a partir del atributo de tu objeto entrante que es el nuevo
                 .Set("name", updatedUser.name)
-                .Set("password", updatedUser.password)
-                .Set("email", updatedUser.email); // Actualizar el campo City
 
-            usersCollection.UpdateOne(filter, update); //Se reemplaza el viejo objeto por el nuevo con los campos modificados
+                .Set("email", updatedUser.email); 
+            usersCollection.UpdateOne(filter, update); 
         }
 
         public void Users_DeleteAll(List<string> userIds)

@@ -18,32 +18,18 @@ namespace API_Sample_Mflix.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        [BsonElement("Sensor1")]
-        public float Sensor1 { get; set; }
+        [BsonElement("Width")]
+        public float Width { get; set; }
 
-        [BsonElement("Sensor2")]
-        public float Sensor2 { get; set; }
+        [BsonElement("Large")]
+        public float Large { get; set; }
 
-        [BsonElement("Sensor3")]
-        public float Sensor3 { get; set; }
+        [BsonElement("Depth")]
+        public float Depth { get; set; }
 
-        [BsonElement("Sensor4")]
-        public float Sensor4 { get; set; }
-
-        // Aquí se define la propiedad Color
         [BsonElement("Color")]
         public Color Color { get; set; }
     }
 
-    public class Color
-    {
-        [BsonElement("Green")]
-        public int Green { get; set; }
 
-        [BsonElement("Red")]
-        public int Red { get; set; }
-
-        [BsonElement("Blue")]
-        public int Blue { get; set; }
-    }
 }

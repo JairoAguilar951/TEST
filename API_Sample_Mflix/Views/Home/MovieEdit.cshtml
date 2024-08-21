@@ -11,15 +11,48 @@
 @foreach (var item in Model)
 {
 
-<form action="/Home/Movie">
+<form  id="formUpdate">
+    <input type="hidden" name="Id" value="@item.Id">
     <div class="form-group">
         <label for="formGroupExampleInput">Example label</label>
         <input name="plot" type="text" class="form-control" id="formGroupExampleInput" value="@item.plot" placeholder="Example input">
-        
+    </div>
+    <div class="form-group">
+        <label for="formGroupExampleInput">Example label</label>
+        <input name="fullplot" type="text" class="form-control" id="formGroupExampleInput" value="@item.fullplot" placeholder="Example input">
+    </div>
+    <div class="form-group">
+        <label for="formGroupExampleInput">Example label</label>
+<textarea name="langs" id="langs">@string.Join(",", item.languages)</textarea>
+
+    </div>
+    <div class="form-group">
+
     </div>
     <button type="submit">Update</button>
 </form>
 
+
 }
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var form = document.querySelector('#formUpdate');
+        form.addEventListener('submit', function() {
+            var textarea = document.getElementById('langs');
+            var languagesString = textarea.value.trim(); // Obtener el contenido del textarea
+
+            // Separar los idiomas por comas y espacios
+            var languagesArray = languagesString.split(',').map(function(item) {
+                return item.trim();
+            });
+
+            // Convertir el array de idiomas en una cadena para la URL
+            var languagesParam = languagesArray.join(',');
+
+            // Agregar el parámetro al action del formulario
+            form.action = "@Url.Action("UpdateMovie", "Home")?langs=" + encodeURIComponent(languagesParam);
+        });
+    });
+</script>
 

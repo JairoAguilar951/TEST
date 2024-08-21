@@ -25,19 +25,30 @@ namespace API_Sample_Mflix.Controllers
             return View(movies);
         }
 
-        public ActionResult Movie(string title, bool edit = false)
+        public ActionResult MovieCatalog(string title, bool edit = false)
         {
             
             List<Movies> movies = db_mongo.Movies(db_mongo.mongoDatabase).ToList();
-            List<Movies> filter = movies.Where(x => x.title == title).ToList();
+            List<Comments> comments = db_mongo.Comments(db_mongo.mongoDatabase, movies).ToList();
+
+            var tuple = Tuple.Create(movies, comments);
 
             if(edit == false)
             {
-            return View(filter);
+            return View(tuple);
             }
 
-            return View("MovieEdit", filter);
+            return View("MovieEdit", movies);
 
+        }
+
+        public ActionResult UpdateMovie(Movies updatedMovie, string langs)
+        {
+            string[] langsArr = langs.Split(',');
+            updatedMovie.languages = langsArr;
+            db_mongo.movieUpdate(updatedMovie);
+            return RedirectToAction("Movies");
+       
         }
     }
 }

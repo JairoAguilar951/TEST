@@ -14,6 +14,8 @@ namespace API_Sample_Mflix.Models
             awards = new Awards();
             imdb = new Imdb();
             tomatoes = new tomatoes();
+            imdb.rating = 0.0;
+            imdb.votes = 0;
         }
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -113,10 +115,10 @@ namespace API_Sample_Mflix.Models
         public int id { get; set; }
 
         [BsonElement("rating")]
-        public double rating { get; set; }
+        public double? rating { get; set; }
 
         [BsonElement("votes")]
-        public int votes { get; set; }
+        public int? votes { get; set; }
 
     }
 

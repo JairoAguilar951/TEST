@@ -1,0 +1,54 @@
+﻿@using API_Sample_Mflix.Models;
+@model Tuple<List<Movies>, List<Comments>>
+
+@{
+    ViewBag.Title = "MovieCatalog";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+
+    <h1>Películas:</h1>
+ 
+        @foreach (var movie in Model.Item1)
+        {
+        <div class="card" style="width: 18rem;">
+            <img src="@movie.poster" class="card-img-top" alt="@movie.title">
+            <div class="card-body">
+                <h5 class="card-title">@movie.title</h5>
+                @{
+                    if (movie.languages.Length > 0) {
+                    foreach (var lang in movie.languages)
+                    {
+                        <span class="badge bg-primary">@lang</span>
+                    }
+                    }
+                }
+                <p class="card-text">@movie.plot</p>
+
+            </div>
+        </div>
+
+        <div class="card-footer">
+            <details>
+                <summary>See comments</summary>
+                <div class="mt-3">
+                    @foreach (var comment in Model.Item2.Where(x => x.movie_id == movie.Id))
+                    {
+                        <div class="comment-box">
+                            <div>
+                                <small class="comment-timestamo">@comment.date</small>
+                            </div>
+                            <div class="comment-header">
+                                <span class="comment-author">@comment.name <small class="text-info">(@comment.email)</small></span>
+                            </div>
+                            <div class="comment-body">
+                                @comment.text
+                            </div>
+                        </div>
+                    }
+                </div>
+            </details>
+        </div>
+        }
+
